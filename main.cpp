@@ -11,6 +11,11 @@ IMAGE* imgZhiWu[ZHI_WU_COUNT][20];//各种植物的动图
 
 int curX,curY;//当前选中的植物，在移动过程中的位置坐标
 int curZhiWu;
+struct zhiwu{
+    int type;
+    int frameIndex;//序列帧的序号
+};
+struct zhiwu map[3][9];
 //判断文件是否存在
 bool fileExist(const char* name){
     FILE* fp = fopen(name,"r");
@@ -27,6 +32,7 @@ void gameInit(){
     loadimage(&imaBar,_T("D:\\code\\clioncode\\untitled\\res\\bar5.png"));
 
     memset(imgZhiWu,0,sizeof(imgZhiWu));
+    memset(map,0,sizeof(map));
     //初始化植物卡牌
     char name[64];
     for(int i=0;i<ZHI_WU_COUNT;i++){
@@ -65,6 +71,16 @@ void updateWindow(){
         IMAGE* img = imgZhiWu[curZhiWu-1][0];
         putimagePNG(curX-img->getwidth()/2,curY-img->getheight()/2,img);
     }
+    //渲染种植的植物
+    for(int i =0;i<3;i++){
+        for(int j=0;j<9;j++){
+            if(map[i][j].type>0){//需要判断，否侧直接崩
+                int x=256+81*j;
+                int y=179+i*102;
+                putimagePNG(x,y,imgZhiWu[map[i][j].type-1][map[i][j].frameIndex]);
+            }
+        }
+    }
     EndBatchDraw();//结束双缓冲
 }
 //用户点击功能
@@ -84,9 +100,20 @@ void userClick(){
         }else if(msg.message == WM_MOUSEMOVE&&status==1){//判断是否鼠标移动
             curX = msg.x;
             curY = msg.y;
-
         }else if(msg.message == WM_LBUTTONUP){//判断鼠标左键是否松开
+            //确定种在几行几列
+            if(msg.x>256&&msg.y>179&&msg.y<489){
+                int row = (msg.y-179)/102;
+                int col = (msg.x-256)/81;
+                printf("%d %d\n",row,col);
+                if(map[row][col].type==0){
+                    map[row][col].type=curZhiWu;
+                    map[row][col].frameIndex=0;
+                }
 
+            }
+            curZhiWu = 0;
+            status = 0;
         }
     }
 }
