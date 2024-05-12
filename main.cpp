@@ -66,11 +66,6 @@ void updateWindow(){
         putimagePNG(width,5,&imgCards[i]);
         width+=65;
     }
-    //渲染拖动过程的植物
-    if(curZhiWu){
-        IMAGE* img = imgZhiWu[curZhiWu-1][0];
-        putimagePNG(curX-img->getwidth()/2,curY-img->getheight()/2,img);
-    }
     //渲染种植的植物
     for(int i =0;i<3;i++){
         for(int j=0;j<9;j++){
@@ -80,6 +75,11 @@ void updateWindow(){
                 putimagePNG(x,y,imgZhiWu[map[i][j].type-1][map[i][j].frameIndex]);
             }
         }
+    }
+    //渲染拖动过程的植物
+    if(curZhiWu){
+        IMAGE* img = imgZhiWu[curZhiWu-1][0];
+        putimagePNG(curX-img->getwidth()/2,curY-img->getheight()/2,img);
     }
     EndBatchDraw();//结束双缓冲
 }
@@ -117,11 +117,35 @@ void userClick(){
         }
     }
 }
+//改变游戏相关数据
+void updateGame(){
+    for(int i=0;i<3;i++){
+        for(int j=0;j<9;j++){
+            if(map[i][j].type){
+                map[i][j].frameIndex++;
+                if(imgZhiWu[map[i][j].type-1][map[i][j].frameIndex]==NULL){
+                    map[i][j].frameIndex=0;
+                }
+            }
+        }
+    }
+}
 int main() {
     gameInit();
+    int timer=0;
+    bool flag = true;
     while(1){
         userClick();
-        updateWindow();
+        timer+=getDelay();
+        if(timer>25){
+            flag= true;
+            timer = 0;
+        }
+        if(flag){
+            flag = false;
+            updateWindow();
+            updateGame();
+        }
     }
     system("pause");
     return 0;
