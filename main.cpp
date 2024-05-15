@@ -130,8 +130,32 @@ void updateGame(){
         }
     }
 }
+//启动菜单
+void startUI(){
+    IMAGE imageStart,imageMenu1,imageMenu2;
+    loadimage(&imageStart,_T("D:\\code\\clioncode\\untitled\\res\\menu.png"));
+    loadimage(&imageMenu1,_T("D:\\code\\clioncode\\untitled\\res\\menu1.png"));
+    loadimage(&imageMenu2,_T("D:\\code\\clioncode\\untitled\\res\\menu2.png"));
+    int flag=0;
+    while(1){
+        BeginBatchDraw();
+        putimage(0,0,&imageStart);
+        putimagePNG(474,75,flag ? &imageMenu2:&imageMenu1);
+        ExMessage msg;
+        if(peekmessage(&msg)){
+             if(msg.message==WM_MOUSEMOVE){
+                if(msg.x>474&&msg.x<774&&msg.y>75&&msg.y<215) flag=1;
+                else flag=0;
+            }else if(msg.message==WM_LBUTTONUP&&msg.x>474&&msg.x<774&&msg.y>75&&msg.y<215){
+                break;
+            }
+        }
+        EndBatchDraw();
+    }
+}
 int main() {
     gameInit();
+    startUI();
     int timer=0;
     bool flag = true;
     while(1){
