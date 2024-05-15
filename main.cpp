@@ -34,6 +34,8 @@ struct sunshineBoll bolls[10];
 
 void createSunshine();
 
+void updateSunshine();
+
 IMAGE imageSunshine[29];
 
 //判断文件是否存在
@@ -110,6 +112,14 @@ void updateWindow() {
         IMAGE *img = imgZhiWu[curZhiWu - 1][0];
         putimagePNG(curX - img->getwidth() / 2, curY - img->getheight() / 2, img);
     }
+    //渲染阳光
+    int bollMax = sizeof(bolls) / sizeof(bolls[0]);
+    for (int i = 0; i < bollMax; i++) {
+        if (bolls[i].isUsed) {
+            putimagePNG(bolls[i].x, bolls[i].y, &imageSunshine[bolls[i].frameIndex]);
+        }
+
+    }
     EndBatchDraw();//结束双缓冲
 }
 
@@ -126,6 +136,8 @@ void userClick() {
                 printf("%d\n", index);//打印，避免出错
                 status = 1;
                 curZhiWu = index + 1;
+                curX = msg.x;
+                curY = msg.y;
             }
         } else if (msg.message == WM_MOUSEMOVE && status == 1) {//判断是否鼠标移动
             curX = msg.x;
@@ -161,6 +173,21 @@ void updateGame() {
         }
     }
     createSunshine();
+    updateSunshine();
+}
+
+//更新阳光状态
+void updateSunshine() {
+    int bollMax = sizeof(bolls) / sizeof(bolls[0]);
+    for (int i = 0; i < bollMax; i++) {
+        if (bolls[i].isUsed) {
+            bolls[i].frameIndex = (bolls[i].frameIndex + 1) % 29;
+            bolls[i].y += 2;
+            if (bolls[i].y >= bolls[i].target_y) {
+                bolls[i].isUsed = 0;
+            }
+        }
+    }
 }
 
 //创建阳光
@@ -180,9 +207,8 @@ void createSunshine() {
         bolls[i].frameIndex = 0;
         bolls[i].x = 260 + rand() % 640;
         bolls[i].y = 60;
-        bolls[i].target_y = 200 + rand() % 4 * 90;
+        bolls[i].target_y = 200 + (rand() % 4) * 90;
     }
-
 }
 
 //启动菜单
