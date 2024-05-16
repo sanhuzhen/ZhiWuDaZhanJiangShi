@@ -1,7 +1,11 @@
 #include<stdio.h>
 #include<time.h>
+#include<windows.h>
 #include<graphics.h>//图形库
 #include "tools.h"//消除黑边
+#include<mmsystem.h>
+
+#pragma comment(lib, "Winmm.lib")
 
 #define WIDTH 900
 #define HEIGHT 600
@@ -31,10 +35,14 @@ struct sunshineBoll {
 };
 //运用池
 struct sunshineBoll bolls[10];
+//阳光值
+int sunshine;
 
 void createSunshine();
 
 void updateSunshine();
+
+void collectSunshine(ExMessage message);
 
 IMAGE imageSunshine[29];
 
@@ -76,6 +84,7 @@ void gameInit() {
         }
     }
     curZhiWu = 0;
+    sunshine = 50;
     memset(bolls, 0, sizeof(bolls));
     for (int i = 0; i < 29; i++) {
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\sunshine\\%d.png", i + 1);
@@ -85,6 +94,16 @@ void gameInit() {
     srand(time(NULL));
     //游戏图形框
     initgraph(WIDTH, HEIGHT, 1);
+    //设置字体
+    LOGFONT f;
+    gettextstyle(&f);
+    f.lfHeight = 30;
+    f.lfWeight = 15;
+    strcpy(f.lfFaceName, "Segoe UI Black");
+    f.lfQuality = ANTIALIASED_QUALITY;//抗锯齿
+    settextstyle(&f);
+    setbkmode(TRANSPARENT);//设置字体背景
+    setcolor(BLACK);
 }
 
 //渲染图片
@@ -120,6 +139,10 @@ void updateWindow() {
         }
 
     }
+    //将阳光值输入
+    char scoreText[8];
+    sprintf_s(scoreText, sizeof(scoreText), "%d", sunshine);
+    outtextxy(285, 67, scoreText);
     EndBatchDraw();//结束双缓冲
 }
 
@@ -138,6 +161,8 @@ void userClick() {
                 curZhiWu = index + 1;
                 curX = msg.x;
                 curY = msg.y;
+            } else {
+                collectSunshine(msg);
             }
         } else if (msg.message == WM_MOUSEMOVE && status == 1) {//判断是否鼠标移动
             curX = msg.x;
@@ -159,6 +184,7 @@ void userClick() {
         }
     }
 }
+
 
 //改变游戏相关数据
 void updateGame() {
@@ -185,6 +211,25 @@ void updateSunshine() {
             bolls[i].y += 2;
             if (bolls[i].y >= bolls[i].target_y) {
                 bolls[i].isUsed = 0;
+            }
+        }
+    }
+}
+
+//收集阳光
+void collectSunshine(ExMessage msg) {
+    int count = sizeof(bolls) / sizeof(bolls[0]);
+    int w = imageSunshine[0].getwidth();
+    int h = imageSunshine[0].getheight();
+    for (int i = 0; i < count; i++) {
+        if (bolls[i].isUsed) {
+            int x = bolls[i].x;
+            int y = bolls[i].y;
+            if (msg.x > x && msg.x < x + w && msg.y > y && msg.y < y + h) {
+                sunshine += 25;
+                printf("%d\n", sunshine);
+                bolls[i].isUsed = 0;
+//                mciSendString("D:\\code\\clioncode\\untitled\\res\\sunshine.mp3",0,0,0);
             }
         }
     }
