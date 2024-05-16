@@ -25,7 +25,15 @@ struct zhiwu {
     int frameIndex;//序列帧的序号
 };
 struct zhiwu map[3][9];
-
+//定义僵尸
+IMAGE imageZM[22];
+struct zm {
+    int x, y;
+    int frameIndex;
+    int isUsed;
+    int speed;
+};
+struct zm zms[10];
 //定义阳光
 struct sunshineBoll {
     int x, y;//阳光在飘落过程中的坐标过程
@@ -43,6 +51,10 @@ void createSunshine();
 void updateSunshine();
 
 void collectSunshine(ExMessage message);
+
+void createZM();
+
+void updateZM();
 
 IMAGE imageSunshine[29];
 
@@ -104,6 +116,12 @@ void gameInit() {
     settextstyle(&f);
     setbkmode(TRANSPARENT);//设置字体背景
     setcolor(BLACK);
+    //初始化僵尸
+    memset(zms, 0, sizeof(zms));
+    for (int i = 0; i < 22; i++) {
+        sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm\\%d.png", i + 1);
+        loadimage(&imageZM[i], name);
+    }
 }
 
 //渲染图片
@@ -143,6 +161,14 @@ void updateWindow() {
     char scoreText[8];
     sprintf_s(scoreText, sizeof(scoreText), "%d", sunshine);
     outtextxy(285, 67, scoreText);
+
+    //渲染僵尸
+    int zmMax = sizeof(zms)/sizeof(zms[0]);
+    for(int i=0;i<zmMax;i++){
+        if(zms[i].isUsed){
+            putimagePNG(zms[i].x,zms[i].y,&imageZM[zms[i].frameIndex]);
+        }
+    }
     EndBatchDraw();//结束双缓冲
 }
 
@@ -200,6 +226,44 @@ void updateGame() {
     }
     createSunshine();
     updateSunshine();
+    createZM();
+    updateZM();
+}
+
+//更新僵尸的状态
+void updateZM() {
+    int zmMAx = sizeof(zms) / sizeof(zms[0]);
+    for (int i = 0; i < zmMAx; i++) {
+        if (zms[i].isUsed) {
+            zms[i].x -= zms[i].speed;
+//            if (zms[i].x <= 170) {
+//                printf("GAME OVER\n");
+//                MessageBox(NULL, "over", "over", 0);//待优化
+//                exit(0);
+//            }
+            zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
+        }
+    }
+}
+
+//创建僵尸
+void createZM() {
+    static int zmFre = 400;
+    static int count = 0;
+    count++;
+    if (count > zmFre) {
+        count = 0;
+        zmFre = rand() % 200 + 300;
+        int i;
+        int zmMax = sizeof(zms) / sizeof(zms[0]);
+        for (i = 0; i < zmMax && zms[i].isUsed; i++);
+        if (i < zmMax) {
+            zms[i].isUsed = 1;
+            zms[i].x = WIDTH;
+            zms[i].y = 26 + (1+rand() % 3) * 100;
+            zms[i].speed = 1;
+        }
+    }
 }
 
 //更新阳光状态
@@ -210,6 +274,7 @@ void updateSunshine() {
             bolls[i].frameIndex = (bolls[i].frameIndex + 1) % 29;
             bolls[i].y += 2;
             if (bolls[i].y >= bolls[i].target_y) {
+//                Sleep(3000);
                 bolls[i].isUsed = 0;
             }
         }
