@@ -3,6 +3,7 @@
 #include<windows.h>
 #include<graphics.h>//图形库
 #include "tools.h"//消除黑边
+#include<math.h>
 #include<mmsystem.h>
 
 #pragma comment(lib, "Winmm.lib")
@@ -20,11 +21,11 @@ IMAGE *imgZhiWu[ZHI_WU_COUNT][20];//各种植物的动图
 int curX, curY;//当前选中的植物，在移动过程中的位置坐标
 int curZhiWu;
 
-struct zhiwu {
+struct zhiWu {
     int type;
     int frameIndex;//序列帧的序号
 };
-struct zhiwu map[3][9];
+struct zhiWu map[3][9];
 //定义僵尸
 IMAGE imageZM[22];
 struct zm {
@@ -40,6 +41,9 @@ struct sunshineBoll {
     int frameIndex;//当前显示图片帧的序号
     int target_y;//飘落的y坐标停留地点
     int isUsed;//是否在使用
+    int timer;
+    float xOff;
+    float yOff;
 };
 //运用池
 struct sunshineBoll bolls[10];
@@ -50,7 +54,7 @@ void createSunshine();
 
 void updateSunshine();
 
-void collectSunshine(ExMessage message);
+void collectSunshine(ExMessage *message);
 
 void createZM();
 
@@ -84,7 +88,7 @@ void gameInit() {
         loadimage(&imgCards[i], _T(name));
 
         for (int j = 0; j < 20; j++) {
-            sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zhiwu\\%d\\%d.png", i, j + 1);
+            sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zhiWu\\%d\\%d.png", i, j + 1);
             //先判断文件是否存在
             if (fileExist(name)) {
                 //分配内存
@@ -152,7 +156,7 @@ void updateWindow() {
     //渲染阳光
     int bollMax = sizeof(bolls) / sizeof(bolls[0]);
     for (int i = 0; i < bollMax; i++) {
-        if (bolls[i].isUsed) {
+        if (bolls[i].isUsed||bolls[i].xOff) {
             putimagePNG(bolls[i].x, bolls[i].y, &imageSunshine[bolls[i].frameIndex]);
         }
 
@@ -163,10 +167,10 @@ void updateWindow() {
     outtextxy(285, 67, scoreText);
 
     //渲染僵尸
-    int zmMax = sizeof(zms)/sizeof(zms[0]);
-    for(int i=0;i<zmMax;i++){
-        if(zms[i].isUsed){
-            putimagePNG(zms[i].x,zms[i].y,&imageZM[zms[i].frameIndex]);
+    int zmMax = sizeof(zms) / sizeof(zms[0]);
+    for (int i = 0; i < zmMax; i++) {
+        if (zms[i].isUsed) {
+            putimagePNG(zms[i].x, zms[i].y, &imageZM[zms[i].frameIndex]);
         }
     }
     EndBatchDraw();//结束双缓冲
@@ -188,7 +192,7 @@ void userClick() {
                 curX = msg.x;
                 curY = msg.y;
             } else {
-                collectSunshine(msg);
+                collectSunshine(&msg);
             }
         } else if (msg.message == WM_MOUSEMOVE && status == 1) {//判断是否鼠标移动
             curX = msg.x;
@@ -232,18 +236,29 @@ void updateGame() {
 
 //更新僵尸的状态
 void updateZM() {
-    int zmMAx = sizeof(zms) / sizeof(zms[0]);
-    for (int i = 0; i < zmMAx; i++) {
-        if (zms[i].isUsed) {
-            zms[i].x -= zms[i].speed;
+    int zmMax = sizeof(zms) / sizeof(zms[0]);
+    static int count = 0;
+    count++;
+    if (count > 2) {
+        count = 0;
+        for (int i = 0; i < zmMax; i++) {
+            if (zms[i].isUsed) {
+                zms[i].x -= zms[i].speed;
 //            if (zms[i].x <= 170) {
 //                printf("GAME OVER\n");
 //                MessageBox(NULL, "over", "over", 0);//待优化
 //                exit(0);
 //            }
+
+            }
+        }
+    }
+    for (int i = 0; i < zmMax; i++) {
+        if (zms[i].isUsed) {
             zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
         }
     }
+
 }
 
 //创建僵尸
@@ -260,7 +275,7 @@ void createZM() {
         if (i < zmMax) {
             zms[i].isUsed = 1;
             zms[i].x = WIDTH;
-            zms[i].y = 26 + (1+rand() % 3) * 100;
+            zms[i].y = 26 + (1 + rand() % 3) * 100;
             zms[i].speed = 1;
         }
     }
@@ -272,17 +287,35 @@ void updateSunshine() {
     for (int i = 0; i < bollMax; i++) {
         if (bolls[i].isUsed) {
             bolls[i].frameIndex = (bolls[i].frameIndex + 1) % 29;
-            bolls[i].y += 2;
+            if (bolls[i].timer == 0) {
+                bolls[i].y += 2;
+            }
             if (bolls[i].y >= bolls[i].target_y) {
-//                Sleep(3000);
-                bolls[i].isUsed = 0;
+                bolls[i].timer++;
+                if (bolls[i].timer > 100) {
+                    bolls[i].isUsed = 0;
+                }
+            }
+        }else if(bolls[i].xOff){
+            float dextY = 0;
+            float dextX = 262;
+            float angle = atan((bolls[i].y - dextY) / (bolls[i].x - dextX));
+            bolls[i].xOff = 10 * cos(angle);
+            bolls[i].yOff = 10 * sin(angle);
+            bolls[i].x -= bolls[i].xOff;
+            bolls[i].y -= bolls[i].yOff;
+            if(bolls[i].y <= 0 || bolls[i].x <= 262){
+//                bolls[i].isUsed = 0;
+                bolls[i].xOff = 0;
+                bolls[i].yOff = 0;
+                sunshine += 25;
             }
         }
     }
 }
 
 //收集阳光
-void collectSunshine(ExMessage msg) {
+void collectSunshine(ExMessage *msg) {
     int count = sizeof(bolls) / sizeof(bolls[0]);
     int w = imageSunshine[0].getwidth();
     int h = imageSunshine[0].getheight();
@@ -290,11 +323,16 @@ void collectSunshine(ExMessage msg) {
         if (bolls[i].isUsed) {
             int x = bolls[i].x;
             int y = bolls[i].y;
-            if (msg.x > x && msg.x < x + w && msg.y > y && msg.y < y + h) {
-                sunshine += 25;
-                printf("%d\n", sunshine);
+            if (msg->x > x && msg->x < x + w && msg->y > y && msg->y < y + h) {
                 bolls[i].isUsed = 0;
+//                sunshine += 25;
+                printf("%d\n", sunshine);
 //                mciSendString("D:\\code\\clioncode\\untitled\\res\\sunshine.mp3",0,0,0);
+                float dextY = 0;
+                float dextX = 262;
+                float angle = atan((bolls[i].y - dextY) / (bolls[i].x - dextX));
+                bolls[i].xOff = 10 * cos(angle);
+                bolls[i].yOff = 10 * sin(angle);
             }
         }
     }
@@ -317,7 +355,10 @@ void createSunshine() {
         bolls[i].frameIndex = 0;
         bolls[i].x = 260 + rand() % 640;
         bolls[i].y = 60;
+        bolls[i].timer = 0;
         bolls[i].target_y = 200 + (rand() % 4) * 90;
+        bolls[i].xOff = 0;
+        bolls[i].yOff = 0;
     }
 }
 
