@@ -42,6 +42,7 @@ struct bullet bullets[30];
 //定义僵尸
 IMAGE imageZM[22];
 IMAGE imageZMDead[20];
+IMAGE imageZMEat[21];
 struct zm {
     int x, y;
     int row;
@@ -51,6 +52,7 @@ struct zm {
     int blood;
     int dead;
     int DeathFrameIndex;
+    int isEating;//吃植物状态
 };
 struct zm zms[10];
 //定义阳光
@@ -212,10 +214,7 @@ void updateWindow() {
             if (zms[i].dead == 0) {
                 putimagePNG(zms[i].x, zms[i].y, &imageZM[zms[i].frameIndex]);
             } else {
-                putimagePNG(zms[i].x, zms[i].y, &imageZMDead[zms[i].DeathFrameIndex]);
-                if (zms[i].DeathFrameIndex == 20) {
-                    zms[i].isUsed = 0;
-                }
+                putimagePNG(zms[i].x, zms[i].y, &imageZMDead[zms[i].frameIndex]);
             }
 
         }
@@ -309,10 +308,15 @@ void collisionCheck() {
             }
             int x1 = zms[j].x + 80;
             int x2 = zms[j].x + 110;
-            if (bullets[i].row == zms[j].row && bullets[i].x > x1 && bullets[i].x < x2) {
+            if (bullets[i].row == zms[j].row && bullets[i].x > x1 && bullets[i].x < x2 && !zms[j].dead) {
                 bullets[i].isBlasted = 1;
                 zms[j].blood -= 10;
                 bullets[i].speed = 0;
+                if (zms[j].blood <= 0) {
+                    zms[j].dead = 1;
+                    zms[j].speed = 0;
+                    zms[j].frameIndex=0;
+                }
             }
         }
     }
@@ -386,10 +390,6 @@ void updateZM() {
         for (int i = 0; i < zmMax; i++) {
             if (zms[i].isUsed) {
                 zms[i].x -= zms[i].speed;
-                if (zms[i].blood <= 0) {
-                    zms[i].dead = 1;
-                    zms[i].speed = 0;
-                }
 //            if (zms[i].x <= 170) {
 //                printf("GAME OVER\n");
 //                MessageBox(NULL, "over", "over", 0);//待优化
@@ -401,14 +401,17 @@ void updateZM() {
     }
     for (int i = 0; i < zmMax; i++) {
         if (zms[i].isUsed) {
-            zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
-        }
-        if (zms[i].dead) {
-            zms[i].DeathFrameIndex = zms[i].DeathFrameIndex + 1;
-            if(zms[i].DeathFrameIndex==20){
-                zms[i].isUsed=0;
+            if (zms[i].dead) {
+                zms[i].frameIndex = zms[i].frameIndex + 1;
+                if(zms[i].frameIndex>=20){
+                    zms[i].isUsed=0;
+                }
+            }else{
+                zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
             }
+
         }
+
     }
 
 }
@@ -432,7 +435,6 @@ void createZM() {
             zms[i].speed = 1;
             zms[i].blood = 100;
             zms[i].frameIndex = 0;
-            zms[i].DeathFrameIndex = 0;
             zms[i].dead = 0;
         }
     }
