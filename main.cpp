@@ -4,7 +4,7 @@
 #include<graphics.h>//图形库
 #include "tools.h"//消除黑边
 #include<math.h>
-#include<mmsystem.h>
+//#include<mmsystem.h>
 
 #pragma comment(lib, "Winmm.lib")
 
@@ -28,22 +28,29 @@ struct zhiWu {
 struct zhiWu map[3][9];
 //定义豌豆子弹
 IMAGE imageNormalBullet;
+IMAGE imageBlastBullet[4];
 struct bullet {
     int x, y;
     bool isUsed;
     int row;
     int speed;
+    int isBlasted;//是否发生爆炸
+    int frameIndex;
 };
 struct bullet bullets[30];
 
 //定义僵尸
 IMAGE imageZM[22];
+IMAGE imageZMDead[20];
 struct zm {
     int x, y;
     int row;
     int frameIndex;
     int isUsed;
     int speed;
+    int blood;
+    int dead;
+    int DeathFrameIndex;
 };
 struct zm zms[10];
 //定义阳光
@@ -74,6 +81,8 @@ void updateZM();
 void shoot();
 
 void updateBullets();
+
+void collisionCheck();
 
 IMAGE imageSunshine[29];
 
@@ -141,9 +150,21 @@ void gameInit() {
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm\\%d.png", i + 1);
         loadimage(&imageZM[i], _T(name));
     }
+    for (int i = 0; i < 20; i++) {
+        sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm_dead\\%d.png", i + 1);
+        loadimage(&imageZMDead[i], _T(name));
+    }
     //初始化子弹
     loadimage(&imageNormalBullet, _T("D:\\code\\clioncode\\untitled\\res\\bullets\\bullet_normal.png"));
     memset(bullets, 0, sizeof(bullets));
+
+    //初始化豌豆子弹
+    loadimage(&imageBlastBullet[3], _T("D:\\code\\clioncode\\untitled\\res\\bullets\\bullet_blast.png"));
+    for (int i = 0; i < 3; i++) {
+        float k = 0.2 * (i + 1);
+        loadimage(&imageBlastBullet[i], _T("D:\\code\\clioncode\\untitled\\res\\bullets\\bullet_blast.png"),
+                  imageBlastBullet[3].getwidth() * k, imageBlastBullet[3].getheight() * k, true);
+    }
 }
 
 //渲染图片
@@ -188,14 +209,27 @@ void updateWindow() {
     int zmMax = sizeof(zms) / sizeof(zms[0]);
     for (int i = 0; i < zmMax; i++) {
         if (zms[i].isUsed) {
-            putimagePNG(zms[i].x, zms[i].y, &imageZM[zms[i].frameIndex]);
+            if (zms[i].dead == 0) {
+                putimagePNG(zms[i].x, zms[i].y, &imageZM[zms[i].frameIndex]);
+            } else {
+                putimagePNG(zms[i].x, zms[i].y, &imageZMDead[zms[i].DeathFrameIndex]);
+                if (zms[i].DeathFrameIndex == 20) {
+                    zms[i].isUsed = 0;
+                }
+            }
+
         }
     }
     //渲染子弹
     int bulletMax = sizeof(bullets) / sizeof(bullets[0]);
     for (int i = 0; i < bulletMax; i++) {
         if (bullets[i].isUsed) {
-            putimagePNG(bullets[i].x, bullets[i].y, &imageNormalBullet);
+            if (!bullets[i].isBlasted) {
+                putimagePNG(bullets[i].x, bullets[i].y, &imageNormalBullet);
+            } else {
+                putimagePNG(bullets[i].x, bullets[i].y, &imageBlastBullet[bullets[i].frameIndex]);
+
+            }
         }
     }
     EndBatchDraw();//结束双缓冲
@@ -259,6 +293,29 @@ void updateGame() {
     updateZM();
     shoot();
     updateBullets();
+    collisionCheck();
+}
+
+void collisionCheck() {
+    int bulletMax = sizeof(bullets) / sizeof(bullets[0]);
+    int zmMax = sizeof(zms) / sizeof(zms[0]);
+    for (int i = 0; i < bulletMax; i++) {
+        if (bullets[i].isUsed == 0 || bullets[i].isBlasted) {
+            continue;
+        }
+        for (int j = 0; j < zmMax; j++) {
+            if (zms[j].isUsed == 0) {
+                continue;
+            }
+            int x1 = zms[j].x + 80;
+            int x2 = zms[j].x + 110;
+            if (bullets[i].row == zms[j].row && bullets[i].x > x1 && bullets[i].x < x2) {
+                bullets[i].isBlasted = 1;
+                zms[j].blood -= 10;
+                bullets[i].speed = 0;
+            }
+        }
+    }
 }
 
 //更新子弹的位置
@@ -269,6 +326,12 @@ void updateBullets() {
             bullets[i].x += bullets[i].speed;
             if (bullets[i].x > WIDTH) {
                 bullets[i].isUsed = 0;
+            }
+            if (bullets[i].isBlasted) {
+                bullets[i].frameIndex++;
+                if (bullets[i].frameIndex >= 4) {
+                    bullets[i].isUsed = 0;
+                }
             }
         }
     }
@@ -298,12 +361,14 @@ void shoot() {
                     if (k < bulletMax) {
                         bullets[k].isUsed = true;
                         bullets[k].row = i;
+                        bullets[k].frameIndex = 0;
+                        bullets[k].isBlasted = 0;
                         bullets[k].speed = 6;
                         int zwX = 256 + j * 81;
                         int zwY = 193 + i * 102;
                         bullets[k].x = zwX + imgZhiWu[0][0]->getwidth() - 10;
                         bullets[k].y = zwY + 5;
-                        lines[i]=0;
+                        lines[i] = 0;
                     }
                 }
             }
@@ -321,6 +386,10 @@ void updateZM() {
         for (int i = 0; i < zmMax; i++) {
             if (zms[i].isUsed) {
                 zms[i].x -= zms[i].speed;
+                if (zms[i].blood <= 0) {
+                    zms[i].dead = 1;
+                    zms[i].speed = 0;
+                }
 //            if (zms[i].x <= 170) {
 //                printf("GAME OVER\n");
 //                MessageBox(NULL, "over", "over", 0);//待优化
@@ -333,6 +402,12 @@ void updateZM() {
     for (int i = 0; i < zmMax; i++) {
         if (zms[i].isUsed) {
             zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
+        }
+        if (zms[i].dead) {
+            zms[i].DeathFrameIndex = zms[i].DeathFrameIndex + 1;
+            if(zms[i].DeathFrameIndex==20){
+                zms[i].isUsed=0;
+            }
         }
     }
 
@@ -355,6 +430,10 @@ void createZM() {
             zms[i].row = rand() % 3;
             zms[i].y = 26 + (1 + zms[i].row) * 100;
             zms[i].speed = 1;
+            zms[i].blood = 100;
+            zms[i].frameIndex = 0;
+            zms[i].DeathFrameIndex = 0;
+            zms[i].dead = 0;
         }
     }
 }
