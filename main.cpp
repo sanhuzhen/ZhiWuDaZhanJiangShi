@@ -51,7 +51,6 @@ struct zm {
     int speed;
     int blood;
     int dead;
-    int DeathFrameIndex;
     int isEating;//吃植物状态
 };
 struct zm zms[10];
@@ -155,6 +154,10 @@ void gameInit() {
     for (int i = 0; i < 20; i++) {
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm_dead\\%d.png", i + 1);
         loadimage(&imageZMDead[i], _T(name));
+    }
+    for (int i = 0; i < 21; i++) {
+        sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm_eat\\%d.png", i + 1);
+        loadimage(&imageZMEat[i], _T(name));
     }
     //初始化子弹
     loadimage(&imageNormalBullet, _T("D:\\code\\clioncode\\untitled\\res\\bullets\\bullet_normal.png"));
@@ -315,7 +318,7 @@ void collisionCheck() {
                 if (zms[j].blood <= 0) {
                     zms[j].dead = 1;
                     zms[j].speed = 0;
-                    zms[j].frameIndex=0;
+                    zms[j].frameIndex = 0;
                 }
             }
         }
@@ -403,10 +406,10 @@ void updateZM() {
         if (zms[i].isUsed) {
             if (zms[i].dead) {
                 zms[i].frameIndex = zms[i].frameIndex + 1;
-                if(zms[i].frameIndex>=20){
-                    zms[i].isUsed=0;
+                if (zms[i].frameIndex >= 20) {
+                    zms[i].isUsed = 0;
                 }
-            }else{
+            } else {
                 zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
             }
 
@@ -423,7 +426,7 @@ void createZM() {
     count++;
     if (count > zmFre) {
         count = 0;
-        zmFre = rand() % 200 + 300;
+        zmFre =  rand() % 200;
         int i;
         int zmMax = sizeof(zms) / sizeof(zms[0]);
         for (i = 0; i < zmMax && zms[i].isUsed; i++);
