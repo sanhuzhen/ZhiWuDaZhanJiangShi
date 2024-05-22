@@ -45,4 +45,5 @@ vector2 operator %(vector2 x, vector2 y);
 //ÏòÁ¿GCD 
 vector2 gcd(vector2 x, vector2 y);
 
+//±´Èû¶ûÇúÏß
 vector2 calcBezierPoint(float t, vector2 p0, vector2 p1, vector2 p2, vector2 p3);
