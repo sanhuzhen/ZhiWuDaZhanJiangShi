@@ -602,11 +602,12 @@ void collectSunshine(ExMessage *msg) {
             int x = bolls[i].pCur.x;
             int y = bolls[i].pCur.y;
             if (msg->x > x && msg->x < x + w && msg->y > y && msg->y < y + h) {
+                PlaySound("open D:\\code\\clioncode\\untitled\\res\\an39o-vtxfb.wav",NULL,SND_FILENAME| SND_ASYNC);
 //                bolls[i].isUsed = 0;
                 bolls[i].status = SUNSHINE_COLLECT;
 //                sunshine += 25;
                 printf("%d\n", sunshine);
-//                mciSendString("D:\\code\\clioncode\\untitled\\res\\sunshine.mp3",0,0,0);
+//                mciSendString("open D:\\code\\clioncode\\untitled\\res\\sunshine.mp3",0,0,0);
 //                不用角度，用贝塞尔曲线
 //                float dextY = 0;
 //                float dextX = 262;
