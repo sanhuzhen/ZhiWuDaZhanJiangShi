@@ -24,6 +24,8 @@ int curZhiWu;
 struct zhiWu {
     int type;
     int frameIndex;//序列帧的序号
+    int isAte;//是否被僵尸吃
+    int deadTime;
 };
 struct zhiWu map[3][9];
 //定义豌豆子弹
@@ -84,6 +86,10 @@ void shoot();
 void updateBullets();
 
 void collisionCheck();
+
+void checkBulletsToZm();
+
+void checkZhiWuToZm();
 
 IMAGE imageSunshine[29];
 
@@ -151,10 +157,12 @@ void gameInit() {
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm\\%d.png", i + 1);
         loadimage(&imageZM[i], _T(name));
     }
+    //僵尸被打倒
     for (int i = 0; i < 20; i++) {
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm_dead\\%d.png", i + 1);
         loadimage(&imageZMDead[i], _T(name));
     }
+    //僵尸吃植物
     for (int i = 0; i < 21; i++) {
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm_eat\\%d.png", i + 1);
         loadimage(&imageZMEat[i], _T(name));
@@ -215,7 +223,11 @@ void updateWindow() {
     for (int i = 0; i < zmMax; i++) {
         if (zms[i].isUsed) {
             if (zms[i].dead == 0) {
-                putimagePNG(zms[i].x, zms[i].y, &imageZM[zms[i].frameIndex]);
+                if (zms[i].isEating == 0) {
+                    putimagePNG(zms[i].x, zms[i].y, &imageZM[zms[i].frameIndex]);
+                } else {
+                    putimagePNG(zms[i].x, zms[i].y, &imageZMEat[zms[i].frameIndex]);
+                }
             } else {
                 putimagePNG(zms[i].x, zms[i].y, &imageZMDead[zms[i].frameIndex]);
             }
@@ -267,6 +279,7 @@ void userClick() {
                 if (map[row][col].type == 0) {
                     map[row][col].type = curZhiWu;
                     map[row][col].frameIndex = 0;
+                    map[row][col].deadTime = 0;
                 }
 
             }
@@ -295,10 +308,52 @@ void updateGame() {
     updateZM();
     shoot();
     updateBullets();
-    collisionCheck();
+    collisionCheck();//碰撞检测
 }
 
 void collisionCheck() {
+    checkBulletsToZm();//子弹与僵尸碰撞
+    checkZhiWuToZm();//植物与僵尸碰撞
+}
+
+void checkZhiWuToZm() {
+    int zmMax = sizeof(zms) / sizeof(zms[0]);
+    for (int i = 0; i < zmMax; i++) {
+        if (zms[i].dead) {
+            continue;
+        }
+        //检测同行植物
+        int row = zms[i].row;
+        for (int j = 0; j < 9; j++) {
+            if (map[row][j].type == 0) continue;
+            int zhiWuX = 256 + j * 81;
+            int x1 = zhiWuX + 10;
+            int x2 = zhiWuX + 60;
+            int x3 = zms[i].x + 80;
+            if (x3 > x1 && x3 < x2) {
+                if (map[row][j].isAte) {
+                    map[row][j].deadTime++;
+                    if (map[row][j].deadTime > 100) {
+                        map[row][j].type = 0;
+                        map[row][j].deadTime = 0;
+                        zms[i].isEating = 0;
+                        zms[i].frameIndex = 0;
+                        zms[i].speed = 1;
+                    }
+                } else {
+                    map[row][j].isAte = 1;
+                    map[row][j].deadTime = 0;
+                    zms[i].isEating = 1;
+                    zms[i].speed = 0;
+                    zms[i].frameIndex = 0;
+                }
+
+            }
+        }
+    }
+}
+
+void checkBulletsToZm() {
     int bulletMax = sizeof(bullets) / sizeof(bullets[0]);
     int zmMax = sizeof(zms) / sizeof(zms[0]);
     for (int i = 0; i < bulletMax; i++) {
@@ -402,20 +457,27 @@ void updateZM() {
             }
         }
     }
-    for (int i = 0; i < zmMax; i++) {
-        if (zms[i].isUsed) {
-            if (zms[i].dead) {
-                zms[i].frameIndex = zms[i].frameIndex + 1;
-                if (zms[i].frameIndex >= 20) {
-                    zms[i].isUsed = 0;
+    static int count2 = 0;
+    count2++;
+    if (count2 > 4) {
+        count2 = 0;
+        for (int i = 0; i < zmMax; i++) {
+            if (zms[i].isUsed) {
+                if (zms[i].dead) {
+                    zms[i].frameIndex = zms[i].frameIndex + 1;
+                    if (zms[i].frameIndex >= 20) {
+                        zms[i].isUsed = 0;
+                    }
+                } else if (zms[i].isEating == 0) {
+                    zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
+                } else {
+                    zms[i].frameIndex = (zms[i].frameIndex + 1) % 21;
                 }
-            } else {
-                zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
+
             }
-
         }
-
     }
+
 
 }
 
@@ -426,11 +488,12 @@ void createZM() {
     count++;
     if (count > zmFre) {
         count = 0;
-        zmFre =  rand() % 200;
+        zmFre = 200 + rand() % 200;
         int i;
         int zmMax = sizeof(zms) / sizeof(zms[0]);
         for (i = 0; i < zmMax && zms[i].isUsed; i++);
         if (i < zmMax) {
+            memset(&zms[i], 0, sizeof(zms[i]));
             zms[i].isUsed = 1;
             zms[i].x = WIDTH;
             zms[i].row = rand() % 3;
@@ -439,6 +502,7 @@ void createZM() {
             zms[i].blood = 100;
             zms[i].frameIndex = 0;
             zms[i].dead = 0;
+            zms[i].isEating = 0;
         }
     }
 }
