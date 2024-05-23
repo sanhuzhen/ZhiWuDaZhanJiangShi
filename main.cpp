@@ -49,6 +49,7 @@ struct bullet bullets[30];
 IMAGE imageZM[22];
 IMAGE imageZMDead[20];
 IMAGE imageZMEat[21];
+IMAGE imageZMStand[11];
 struct zm {
     int x, y;
     int row;
@@ -116,6 +117,8 @@ void checkBulletsToZm();
 void checkZhiWuToZm();
 
 void updateZhiWu();
+
+void viewScence();
 
 IMAGE imageSunshine[29];
 
@@ -193,6 +196,11 @@ void gameInit() {
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm_eat\\%d.png", i + 1);
         loadimage(&imageZMEat[i], _T(name));
     }
+    //僵尸站立
+    for (int i = 0; i < 11; i++) {
+        sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zm_stand\\%d.png", i + 1);
+        loadimage(&imageZMStand[i], _T(name));
+    }
     //初始化子弹
     loadimage(&imageNormalBullet, _T("D:\\code\\clioncode\\untitled\\res\\bullets\\bullet_normal.png"));
     memset(bullets, 0, sizeof(bullets));
@@ -234,7 +242,7 @@ void updateWindow() {
     //渲染阳光
     int bollMax = sizeof(bolls) / sizeof(bolls[0]);
     for (int i = 0; i < bollMax; i++) {
-        if (bolls[i].isUsed || bolls[i].xOff) {
+        if (bolls[i].isUsed) {
             putimagePNG(bolls[i].pCur.x, bolls[i].pCur.y, &imageSunshine[bolls[i].frameIndex]);
         }
     }
@@ -711,7 +719,8 @@ void startUI() {
             if (msg.message == WM_MOUSEMOVE) {
                 if (msg.x > 474 && msg.x < 790 && msg.y > 75 && msg.y < 215) flag = 1;
                 else flag = 0;
-            } else if (msg.message == WM_LBUTTONUP && msg.x > 474 && msg.x < 790 && msg.y > 75 && msg.y < 215) {
+            } else if (msg.message == WM_LBUTTONUP && flag) {
+                EndBatchDraw();
                 break;
             }
         }
@@ -719,9 +728,74 @@ void startUI() {
     }
 }
 
+//片头巡场
+void viewScence() {
+    int xMin = WIDTH - imaBg.getwidth();
+    vector2 points[9] = {
+            {550, 80},
+            {530, 160},
+            {630, 170},
+            {530, 200},
+            {515, 270},
+            {565, 370},
+            {605, 340},
+            {705, 280},
+            {690, 340}
+    };
+    int index[9];
+    for (int k = 0; k < 9; k++) {
+        index[k] = rand() % 11;
+    }
+    int count = 0;
+    for (int x = 0; x > xMin; x -= 2) {
+        BeginBatchDraw();
+        putimage(x, 0, &imaBg);
+        count++;
+        for (int i = 0; i < 9; i++) {
+            putimagePNG(points[i].x - xMin + x, points[i].y, &imageZMStand[index[i]]);
+            if (count >= 5) {
+                index[i] = (index[i] + 1) % 11;
+            }
+        }
+        if (count >= 5) count = 0;
+        EndBatchDraw();
+        Sleep(10);
+    }
+    //停留1s
+    for (int j = 0; j < 100; j++) {
+        BeginBatchDraw();
+        putimage(xMin, 0, &imaBg);
+        count++;
+        for (int i = 0; i < 9; i++) {
+            putimagePNG(points[i].x, points[i].y, &imageZMStand[index[i]]);
+            if (count >= 5) {
+                index[i] = (index[i] + 1) % 11;
+            }
+        }
+        if (count >= 5) count = 0;
+        EndBatchDraw();
+        Sleep(10);
+    }
+    for (int x = xMin; x <= 0; x += 2) {
+        BeginBatchDraw();
+        putimage(x, 0, &imaBg);
+        count++;
+        for (int i = 0; i < 9; i++) {
+            putimagePNG(points[i].x - xMin + x, points[i].y, &imageZMStand[index[i]]);
+            if (count >= 5) {
+                index[i] = (index[i] + 1) % 11;
+            }
+        }
+        if (count >= 5) count = 0;
+        EndBatchDraw();
+        Sleep(10);
+    }
+}
+
 int main() {
     gameInit();
     startUI();
+    viewScence();
     int timer = 0;
     bool flag = true;
     while (1) {
@@ -740,3 +814,5 @@ int main() {
     system("pause");
     return 0;
 }
+
+
