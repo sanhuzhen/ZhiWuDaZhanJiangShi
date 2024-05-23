@@ -115,6 +115,8 @@ void checkBulletsToZm();
 
 void checkZhiWuToZm();
 
+void updateZhiWu();
+
 IMAGE imageSunshine[29];
 
 //判断文件是否存在
@@ -316,6 +318,22 @@ void userClick() {
 
 //改变游戏相关数据
 void updateGame() {
+    updateZhiWu();
+    createSunshine();
+    updateSunshine();
+    createZM();
+    updateZM();
+    shoot();
+    updateBullets();
+    collisionCheck();//碰撞检测
+}
+
+void updateZhiWu() {
+    static int count = 0;
+    if (++count < 2) {
+        return;
+    }
+    count = 0;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 9; j++) {
             if (map[i][j].type) {
@@ -326,13 +344,6 @@ void updateGame() {
             }
         }
     }
-    createSunshine();
-    updateSunshine();
-    createZM();
-    updateZM();
-    shoot();
-    updateBullets();
-    collisionCheck();//碰撞检测
 }
 
 void collisionCheck() {
@@ -390,7 +401,7 @@ void checkBulletsToZm() {
             }
             int x1 = zms[j].x + 80;
             int x2 = zms[j].x + 110;
-            if (bullets[i].row == zms[j].row && bullets[i].x > x1 && bullets[i].x < x2 && !zms[j].dead) {
+            if (bullets[i].row == zms[j].row && bullets[i].x > x1 && bullets[i].x < x2 && zms[j].dead == 0) {
                 bullets[i].isBlasted = 1;
                 zms[j].blood -= 10;
                 bullets[i].speed = 0;
@@ -425,6 +436,9 @@ void updateBullets() {
 
 //发射子弹
 void shoot() {
+    static int a = 0;
+    if (++a < 2) return;
+    a = 0;
     int lines[3] = {0};
     int zmMax = sizeof(zms) / sizeof(zms[0]);
     int dangerX = WIDTH - imageZM[0].getwidth();
@@ -449,7 +463,7 @@ void shoot() {
                         bullets[k].row = i;
                         bullets[k].frameIndex = 0;
                         bullets[k].isBlasted = 0;
-                        bullets[k].speed = 6;
+                        bullets[k].speed = 4;
                         int zwX = 256 + j * 81;
                         int zwY = 193 + i * 102;
                         bullets[k].x = zwX + imgZhiWu[0][0]->getwidth() - 10;
@@ -483,7 +497,7 @@ void updateZM() {
     }
     static int count2 = 0;
     count2++;
-    if (count2 > 2) {
+    if (count2 > 4) {
         count2 = 0;
         for (int i = 0; i < zmMax; i++) {
             if (zms[i].isUsed) {
@@ -602,7 +616,7 @@ void collectSunshine(ExMessage *msg) {
             int x = bolls[i].pCur.x;
             int y = bolls[i].pCur.y;
             if (msg->x > x && msg->x < x + w && msg->y > y && msg->y < y + h) {
-                PlaySound("open D:\\code\\clioncode\\untitled\\res\\an39o-vtxfb.wav",NULL,SND_FILENAME| SND_ASYNC);
+                PlaySound("open D:\\code\\clioncode\\untitled\\res\\an39o-vtxfb.wav", NULL, SND_FILENAME | SND_ASYNC);
 //                bolls[i].isUsed = 0;
                 bolls[i].status = SUNSHINE_COLLECT;
 //                sunshine += 25;
@@ -660,7 +674,7 @@ void createSunshine() {
         for (int j = 0; j < 9; j++) {
             if (map[i][j].type == XIANG_RI_KUI + 1) {
                 map[i][j].timer++;
-                if (map[i][j].timer >= 200) {
+                if (map[i][j].timer >= 600) {
                     map[i][j].timer = 0;
                     int k, w;
                     for (k = 0; k < bollMax && bolls[k].isUsed; k++);
@@ -713,7 +727,7 @@ int main() {
     while (1) {
         userClick();
         timer += getDelay();
-        if (timer > 40) {
+        if (timer > 10) {
             flag = true;
             timer = 0;
         }
