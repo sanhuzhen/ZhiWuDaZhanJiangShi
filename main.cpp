@@ -120,6 +120,8 @@ void updateZhiWu();
 
 void viewScence();
 
+void barsDown();
+
 IMAGE imageSunshine[29];
 
 //判断文件是否存在
@@ -217,9 +219,9 @@ void gameInit() {
 //渲染图片
 void updateWindow() {
     BeginBatchDraw();//开始双缓冲
-    putimage(0, 0, &imaBg);
-    putimagePNG(250, 0, &imaBar);
-    int width = 338;
+    putimage(-112, 0, &imaBg);
+    putimagePNG(250 - 112, 0, &imaBar);
+    int width = 338 - 112;
     for (int i = 0; i < ZHI_WU_COUNT; i++) {
         putimagePNG(width, 5, &imgCards[i]);
         width += 65;
@@ -249,7 +251,7 @@ void updateWindow() {
     //将阳光值输入
     char scoreText[8];
     sprintf_s(scoreText, sizeof(scoreText), "%d", sunshine);
-    outtextxy(285, 67, scoreText);
+    outtextxy(285 - 112, 67, scoreText);
 
     //渲染僵尸
     int zmMax = sizeof(zms) / sizeof(zms[0]);
@@ -289,9 +291,9 @@ void userClick() {
     static int status = 0;//是否选择成功
     if (peekmessage(&msg)) {
         if (msg.message == WM_LBUTTONDOWN) {//判断是否是鼠标左键点击
-            if (msg.x > 338 && msg.x < 338 + 65 * ZHI_WU_COUNT && msg.y > 5 && msg.y < 96) {
+            if (msg.x > 338 - 112 && msg.x < 338 - 112 + 65 * ZHI_WU_COUNT && msg.y > 5 && msg.y < 96) {
                 //判断是第几张卡牌
-                int index = (msg.x - 338) / 65;
+                int index = (msg.x - 338 + 112) / 65;
                 printf("%d\n", index);//打印，避免出错
                 status = 1;
                 curZhiWu = index + 1;
@@ -305,14 +307,14 @@ void userClick() {
             curY = msg.y;
         } else if (msg.message == WM_LBUTTONUP) {//判断鼠标左键是否松开
             //确定种在几行几列
-            if (msg.x > 256 && msg.y > 179 && msg.y < 489) {
+            if (msg.x > 256 - 112 && msg.y > 179 && msg.y < 489) {
                 int row = (msg.y - 179) / 102;
-                int col = (msg.x - 256) / 81;
+                int col = (msg.x - 256 + 112) / 81;
                 printf("%d %d\n", row, col);
                 if (map[row][col].type == 0) {
                     map[row][col].type = curZhiWu;
                     map[row][col].frameIndex = 0;
-                    map[row][col].x = 256 + 81 * col;
+                    map[row][col].x = 256 - 112 + 81 * col;
                     map[row][col].y = 193 + row * 102;
                 }
 
@@ -369,7 +371,7 @@ void checkZhiWuToZm() {
         int row = zms[i].row;
         for (int j = 0; j < 9; j++) {
             if (map[row][j].type == 0) continue;
-            int zhiWuX = 256 + j * 81;
+            int zhiWuX = 256 - 112 + j * 81;
             int x1 = zhiWuX + 10;
             int x2 = zhiWuX + 60;
             int x3 = zms[i].x + 80;
@@ -472,7 +474,7 @@ void shoot() {
                         bullets[k].frameIndex = 0;
                         bullets[k].isBlasted = 0;
                         bullets[k].speed = 4;
-                        int zwX = 256 + j * 81;
+                        int zwX = 256 - 112 + j * 81;
                         int zwY = 193 + i * 102;
                         bullets[k].x = zwX + imgZhiWu[0][0]->getwidth() - 10;
                         bullets[k].y = zwY + 5;
@@ -637,7 +639,7 @@ void collectSunshine(ExMessage *msg) {
 //                bolls[i].xOff = 10 * cos(angle);
 //                bolls[i].yOff = 10 * sin(angle);
                 bolls[i].p1 = bolls[i].pCur;//起点
-                bolls[i].p4 = vector2(262, 0);//终点
+                bolls[i].p4 = vector2(262 - 112, 0);//终点
                 bolls[i].t = 0;
                 float distance = dis(bolls[i].p1 - bolls[i].p4);
                 float off = 8;
@@ -671,7 +673,7 @@ void createSunshine() {
 //        bolls[i].yOff = 0;
         bolls[i].status = SUNSHINE_DOWN;
         bolls[i].t = 0;
-        bolls[i].p1 = vector2(260 + rand() % 640, 60);
+        bolls[i].p1 = vector2(260 - 112 + rand() % 640, 60);
         bolls[i].p4 = vector2(bolls[i].p1.x, 200 + (rand() % 4) * 90);
         int off = 2;
         float distance = bolls[i].p4.y - bolls[i].p1.y;
@@ -776,7 +778,7 @@ void viewScence() {
         EndBatchDraw();
         Sleep(10);
     }
-    for (int x = xMin; x <= 0; x += 2) {
+    for (int x = xMin; x <= -112; x += 2) {
         BeginBatchDraw();
         putimage(x, 0, &imaBg);
         count++;
@@ -791,11 +793,31 @@ void viewScence() {
         Sleep(10);
     }
 }
-
+//植物选择栏下降
+void barsDown() {
+    int height = imaBar.getheight();
+    for(int y=-height;y<=0;y++){
+        BeginBatchDraw();
+        putimage(-112,0,&imaBg);
+        putimagePNG(250 - 112, y, &imaBar);
+        int width = 338 - 112;
+        for (int i = 0; i < ZHI_WU_COUNT; i++) {
+            putimagePNG(width, 5+y, &imgCards[i]);
+            width += 65;
+        }
+        //将阳光值输入
+        char scoreText[8];
+        sprintf_s(scoreText, sizeof(scoreText), "%d", sunshine);
+        outtextxy(285 - 112, 67+y, scoreText);
+        EndBatchDraw();
+        Sleep(10);
+    }
+}
 int main() {
     gameInit();
     startUI();
     viewScence();
+    barsDown();
     int timer = 0;
     bool flag = true;
     while (1) {
@@ -814,5 +836,7 @@ int main() {
     system("pause");
     return 0;
 }
+
+
 
 
