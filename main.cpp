@@ -11,10 +11,19 @@
 
 #define WIDTH 900
 #define HEIGHT 600
+#define ZM_MAX 10
+int killZmNum;
+int zmCount;
+int GameState;
+enum {
+    GOING, WIN, FALL
+};
 enum {
     WAN_DOU, XIANG_RI_KUI, ZHI_WU_COUNT
 };//利用枚举实现数组数量灵活
 IMAGE imaBg;//背景图片
+IMAGE imageFall;//结束图片
+IMAGE imageWin;
 IMAGE imaBar;//植物框图片
 IMAGE imgCards[ZHI_WU_COUNT];//植物卡牌数组
 IMAGE *imgZhiWu[ZHI_WU_COUNT][20];//各种植物的动图
@@ -30,6 +39,7 @@ struct zhiWu {
     int timer;
     int x;
     int y;
+    int t;//子弹计时器
 };
 struct zhiWu map[3][9];
 //定义豌豆子弹
@@ -122,6 +132,8 @@ void viewScence();
 
 void barsDown();
 
+void gameOver();
+
 IMAGE imageSunshine[29];
 
 //判断文件是否存在
@@ -136,10 +148,14 @@ bool fileExist(const char *name) {
 
 //加载游戏初始界面
 void gameInit() {
+    killZmNum = 0;
+    zmCount = 0;
+    GameState = GOING;
     //加载图片
     loadimage(&imaBg, _T("D:\\code\\clioncode\\untitled\\res\\bg.jpg"));
     loadimage(&imaBar, _T("D:\\code\\clioncode\\untitled\\res\\bar5.png"));
-
+    loadimage(&imageFall, _T("D:\\code\\clioncode\\untitled\\res\\gameFail.png"));
+    loadimage(&imageWin, _T("D:\\code\\clioncode\\untitled\\res\\gameWin.png"));
     memset(imgZhiWu, 0, sizeof(imgZhiWu));
     memset(map, 0, sizeof(map));
     //初始化植物卡牌
@@ -451,7 +467,7 @@ void shoot() {
     a = 0;
     int lines[3] = {0};
     int zmMax = sizeof(zms) / sizeof(zms[0]);
-    int dangerX = WIDTH - imageZM[0].getwidth();
+    int dangerX = WIDTH - imageZM[0].getwidth() + 65;
     int bulletMax = sizeof(bullets) / sizeof(bullets[0]);
     for (int i = 0; i < zmMax; i++) {
         if (zms[i].isUsed && zms[i].x < dangerX) {
@@ -462,10 +478,11 @@ void shoot() {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 9; j++) {
             if (map[i][j].type == WAN_DOU + 1 && lines[i]) {
-                static int count = 0;
-                count++;
-                if (count > 20) {
-                    count = 0;
+//                static int count = 0;
+//                count++;
+                map[i][j].t++;
+                if (map[i][j].t > 20) {
+                    map[i][j].t = 0;
                     int k;
                     for (k = 0; k < bulletMax && bullets[k].isUsed; k++);
                     if (k < bulletMax) {
@@ -496,11 +513,9 @@ void updateZM() {
         for (int i = 0; i < zmMax; i++) {
             if (zms[i].isUsed) {
                 zms[i].x -= zms[i].speed;
-//            if (zms[i].x <= 170) {
-//                printf("GAME OVER\n");
-//                MessageBox(NULL, "over", "over", 0);//待优化
-//                exit(0);
-//            }
+                if (zms[i].x <= 170 - 112) {
+                    GameState = FALL;
+                }
 
             }
         }
@@ -515,6 +530,10 @@ void updateZM() {
                     zms[i].frameIndex = zms[i].frameIndex + 1;
                     if (zms[i].frameIndex >= 20) {
                         zms[i].isUsed = 0;
+                        if (killZmNum == ZM_MAX) {
+                            GameState = WIN;
+                        }
+                        killZmNum++;
                     }
                 } else if (zms[i].isEating == 0) {
                     zms[i].frameIndex = (zms[i].frameIndex + 1) % 22;
@@ -529,8 +548,17 @@ void updateZM() {
 
 }
 
+void gameOver() {
+    BeginBatchDraw();
+    putimage(0, 0, &imageFall);
+    EndBatchDraw();
+}
+
 //创建僵尸
 void createZM() {
+    if (zmCount >= ZM_MAX) {
+        return;
+    }
     static int zmFre = 400;
     static int count = 0;
     count++;
@@ -551,6 +579,7 @@ void createZM() {
             zms[i].frameIndex = 0;
             zms[i].dead = 0;
             zms[i].isEating = 0;
+            zmCount++;
         }
     }
 }
@@ -793,26 +822,28 @@ void viewScence() {
         Sleep(10);
     }
 }
+
 //植物选择栏下降
 void barsDown() {
     int height = imaBar.getheight();
-    for(int y=-height;y<=0;y++){
+    for (int y = -height; y <= 0; y++) {
         BeginBatchDraw();
-        putimage(-112,0,&imaBg);
+        putimage(-112, 0, &imaBg);
         putimagePNG(250 - 112, y, &imaBar);
         int width = 338 - 112;
         for (int i = 0; i < ZHI_WU_COUNT; i++) {
-            putimagePNG(width, 5+y, &imgCards[i]);
+            putimagePNG(width, 5 + y, &imgCards[i]);
             width += 65;
         }
         //将阳光值输入
         char scoreText[8];
         sprintf_s(scoreText, sizeof(scoreText), "%d", sunshine);
-        outtextxy(285 - 112, 67+y, scoreText);
+        outtextxy(285 - 112, 67 + y, scoreText);
         EndBatchDraw();
         Sleep(10);
     }
 }
+
 int main() {
     gameInit();
     startUI();
@@ -820,7 +851,7 @@ int main() {
     barsDown();
     int timer = 0;
     bool flag = true;
-    while (1) {
+    while (1 && GameState == GOING) {
         userClick();
         timer += getDelay();
         if (timer > 10) {
@@ -832,6 +863,11 @@ int main() {
             updateWindow();
             updateGame();
         }
+    }
+    if(GameState==WIN){
+        putimage(0,0,&imageWin);
+    }else{
+        putimage(0,0,&imageFall);
     }
     system("pause");
     return 0;
