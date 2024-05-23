@@ -866,8 +866,13 @@ int main() {
     }
     if(GameState==WIN){
         putimage(0,0,&imageWin);
+        mciSendString("open D:\\code\\clioncode\\untitled\\res\\win.mp3",NULL,0,NULL);
+        mciSendString("play D:\\code\\clioncode\\untitled\\res\\win.mp3",NULL,0,NULL);
+
     }else{
         putimage(0,0,&imageFall);
+        mciSendString("open D:\\code\\clioncode\\untitled\\res\\lose.mp3",NULL,0,NULL);
+        mciSendString("play D:\\code\\clioncode\\untitled\\res\\lose.mp3",NULL,0,NULL);
     }
     system("pause");
     return 0;
