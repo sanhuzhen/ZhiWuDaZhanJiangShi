@@ -339,7 +339,7 @@ void userClick() {
                 printf("%d\n", index);//打印，避免出错
                 status = 1;
                 curZhiWu = index + 1;
-                if (sunshine < card[curZhiWu-1].price) {
+                if (sunshine < card[curZhiWu - 1].price) {
                     curZhiWu = 0;
                 } else {
                     curX = msg.x;
@@ -362,12 +362,12 @@ void userClick() {
                     map[row][col].frameIndex = 0;
                     map[row][col].x = 256 - 112 + 81 * col;
                     map[row][col].y = 193 + row * 102;
-                    if (map[row][col].type == WAN_DOU + 1&&card[curZhiWu-1].state==light) {
-                        sunshine -= card[curZhiWu-1].price;
-                        card[curZhiWu-1].state=black;
-                    } else if (map[row][col].type == XIANG_RI_KUI + 1&&card[curZhiWu-1].state==light) {
-                        sunshine -= card[curZhiWu-1].price;
-                        card[curZhiWu-1].state=black;
+                    if (map[row][col].type == WAN_DOU + 1 && card[curZhiWu - 1].state == light) {
+                        sunshine -= card[curZhiWu - 1].price;
+                        card[curZhiWu - 1].state = black;
+                    } else if (map[row][col].type == XIANG_RI_KUI + 1 && card[curZhiWu - 1].state == light) {
+                        sunshine -= card[curZhiWu - 1].price;
+                        card[curZhiWu - 1].state = black;
                     }
                 }
 
@@ -394,14 +394,14 @@ void updateGame() {
 
 void updateCard() {
     static int count = 0;
-    if(++count<2) return;
-    count=0;
-    for(int i=0;i<ZHI_WU_COUNT;i++){
-        if(card[i].state==black){
+    if (++count < 2) return;
+    count = 0;
+    for (int i = 0; i < ZHI_WU_COUNT; i++) {
+        if (card[i].state == black) {
             card[i].time++;
-            if(card[i].time>=card[i].time_max){
-                card[i].state=light;
-                card[i].time=0;
+            if (card[i].time >= card[i].time_max) {
+                card[i].state = light;
+                card[i].time = 0;
             }
         }
 
