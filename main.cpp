@@ -26,13 +26,24 @@ IMAGE imageFall;//结束图片
 IMAGE imageWin;
 IMAGE imaBar;//植物框图片
 IMAGE imgCards[ZHI_WU_COUNT];//植物卡牌数组
+IMAGE imgBlackCards[ZHI_WU_COUNT];
 IMAGE *imgZhiWu[ZHI_WU_COUNT][20];//各种植物的动图
 
 int curX, curY;//当前选中的植物，在移动过程中的位置坐标
 int curZhiWu;
 
-struct zhiWu {
+struct cards {
     int price;//植物价格
+    int time;
+    int time_max;
+    int state;
+};
+enum {
+    light, black
+};
+struct cards card[ZHI_WU_COUNT];
+
+struct zhiWu {
     int type;
     int frameIndex;//序列帧的序号
     int isAte;//是否被僵尸吃
@@ -134,6 +145,8 @@ void viewScence();
 void barsDown();
 
 
+void updateCard();
+
 IMAGE imageSunshine[29];
 
 //判断文件是否存在
@@ -151,6 +164,7 @@ void gameInit() {
     killZmNum = 0;
     zmCount = 0;
     GameState = GOING;
+    int price = 100;
     //加载图片
     loadimage(&imaBg, _T("D:\\code\\clioncode\\untitled\\res\\bg.jpg"));
     loadimage(&imaBar, _T("D:\\code\\clioncode\\untitled\\res\\bar5.png"));
@@ -164,7 +178,13 @@ void gameInit() {
         //生成植物卡牌文件名
         sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\Cards\\card_%d.png", i + 1);
         loadimage(&imgCards[i], _T(name));
-
+        sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\Cards_Black\\card_%d.png", i + 1);
+        loadimage(&imgBlackCards[i], _T(name));
+        card[i].price = price;
+        price -= 50;
+        card[i].state = black;
+        card[i].time_max = 100;
+        card[i].time = 0;
         for (int j = 0; j < 20; j++) {
             sprintf_s(name, sizeof(name), "D:\\code\\clioncode\\untitled\\res\\zhiWu\\%d\\%d.png", i, j + 1);
             //先判断文件是否存在
@@ -177,6 +197,7 @@ void gameInit() {
             }
         }
     }
+
     curZhiWu = 0;
     sunshine = 50;
     memset(bolls, 0, sizeof(bolls));
@@ -239,7 +260,11 @@ void updateWindow() {
     putimagePNG(250 - 112, 0, &imaBar);
     int width = 338 - 112;
     for (int i = 0; i < ZHI_WU_COUNT; i++) {
-        putimagePNG(width, 5, &imgCards[i]);
+        if (card[i].state == light && sunshine >= card[i].price) {
+            putimagePNG(width, 5, &imgCards[i]);
+        } else {
+            putimagePNG(width, 5, &imgBlackCards[i]);
+        }
         width += 65;
     }
 
@@ -314,15 +339,12 @@ void userClick() {
                 printf("%d\n", index);//打印，避免出错
                 status = 1;
                 curZhiWu = index + 1;
-                if (sunshine < 100 && curZhiWu == 1) {
-                    curZhiWu = 0;
-                } else if (sunshine < 50 && curZhiWu == 2) {
+                if (sunshine < card[curZhiWu-1].price) {
                     curZhiWu = 0;
                 } else {
                     curX = msg.x;
                     curY = msg.y;
                 }
-
             } else {
                 collectSunshine(&msg);
             }
@@ -340,10 +362,12 @@ void userClick() {
                     map[row][col].frameIndex = 0;
                     map[row][col].x = 256 - 112 + 81 * col;
                     map[row][col].y = 193 + row * 102;
-                    if (map[row][col].type == WAN_DOU + 1) {
-                        sunshine -= 100;
-                    } else if (map[row][col].type == XIANG_RI_KUI + 1) {
-                        sunshine -= 50;
+                    if (map[row][col].type == WAN_DOU + 1&&card[curZhiWu-1].state==light) {
+                        sunshine -= card[curZhiWu-1].price;
+                        card[curZhiWu-1].state=black;
+                    } else if (map[row][col].type == XIANG_RI_KUI + 1&&card[curZhiWu-1].state==light) {
+                        sunshine -= card[curZhiWu-1].price;
+                        card[curZhiWu-1].state=black;
                     }
                 }
 
@@ -357,6 +381,7 @@ void userClick() {
 
 //改变游戏相关数据
 void updateGame() {
+    updateCard();
     updateZhiWu();
     createSunshine();
     updateSunshine();
@@ -365,6 +390,22 @@ void updateGame() {
     shoot();
     updateBullets();
     collisionCheck();//碰撞检测
+}
+
+void updateCard() {
+    static int count = 0;
+    if(++count<2) return;
+    count=0;
+    for(int i=0;i<ZHI_WU_COUNT;i++){
+        if(card[i].state==black){
+            card[i].time++;
+            if(card[i].time>=card[i].time_max){
+                card[i].state=light;
+                card[i].time=0;
+            }
+        }
+
+    }
 }
 
 void updateZhiWu() {
@@ -561,11 +602,6 @@ void updateZM() {
 
 }
 
-void gameOver() {
-    BeginBatchDraw();
-    putimage(0, 0, &imageFall);
-    EndBatchDraw();
-}
 
 //创建僵尸
 void createZM() {
