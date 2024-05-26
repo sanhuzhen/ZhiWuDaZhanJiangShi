@@ -32,6 +32,7 @@ int curX, curY;//当前选中的植物，在移动过程中的位置坐标
 int curZhiWu;
 
 struct zhiWu {
+    int price;//植物价格
     int type;
     int frameIndex;//序列帧的序号
     int isAte;//是否被僵尸吃
@@ -132,7 +133,6 @@ void viewScence();
 
 void barsDown();
 
-void gameOver();
 
 IMAGE imageSunshine[29];
 
@@ -242,6 +242,7 @@ void updateWindow() {
         putimagePNG(width, 5, &imgCards[i]);
         width += 65;
     }
+
     //渲染种植的植物
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 9; j++) {
@@ -313,8 +314,15 @@ void userClick() {
                 printf("%d\n", index);//打印，避免出错
                 status = 1;
                 curZhiWu = index + 1;
-                curX = msg.x;
-                curY = msg.y;
+                if (sunshine < 100 && curZhiWu == 1) {
+                    curZhiWu = 0;
+                } else if (sunshine < 50 && curZhiWu == 2) {
+                    curZhiWu = 0;
+                } else {
+                    curX = msg.x;
+                    curY = msg.y;
+                }
+
             } else {
                 collectSunshine(&msg);
             }
@@ -332,6 +340,11 @@ void userClick() {
                     map[row][col].frameIndex = 0;
                     map[row][col].x = 256 - 112 + 81 * col;
                     map[row][col].y = 193 + row * 102;
+                    if (map[row][col].type == WAN_DOU + 1) {
+                        sunshine -= 100;
+                    } else if (map[row][col].type == XIANG_RI_KUI + 1) {
+                        sunshine -= 50;
+                    }
                 }
 
             }
@@ -864,15 +877,15 @@ int main() {
             updateGame();
         }
     }
-    if(GameState==WIN){
-        putimage(0,0,&imageWin);
-        mciSendString("open D:\\code\\clioncode\\untitled\\res\\win.mp3",NULL,0,NULL);
-        mciSendString("play D:\\code\\clioncode\\untitled\\res\\win.mp3",NULL,0,NULL);
+    if (GameState == WIN) {
+        putimage(0, 0, &imageWin);
+        mciSendString("open D:\\code\\clioncode\\untitled\\res\\win.mp3", NULL, 0, NULL);
+        mciSendString("play D:\\code\\clioncode\\untitled\\res\\win.mp3", NULL, 0, NULL);
 
-    }else{
-        putimage(0,0,&imageFall);
-        mciSendString("open D:\\code\\clioncode\\untitled\\res\\lose.mp3",NULL,0,NULL);
-        mciSendString("play D:\\code\\clioncode\\untitled\\res\\lose.mp3",NULL,0,NULL);
+    } else {
+        putimage(0, 0, &imageFall);
+        mciSendString("open D:\\code\\clioncode\\untitled\\res\\lose.mp3", NULL, 0, NULL);
+        mciSendString("play D:\\code\\clioncode\\untitled\\res\\lose.mp3", NULL, 0, NULL);
     }
     system("pause");
     return 0;
