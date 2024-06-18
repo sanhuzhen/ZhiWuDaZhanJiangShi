@@ -280,8 +280,11 @@ void updateWindow() {
     }
     //渲染拖动过程的植物
     if (curZhiWu) {
-        IMAGE *img = imgZhiWu[curZhiWu - 1][0];
-        putimagePNG(curX - img->getwidth() / 2, curY - img->getheight() / 2, img);
+        if (card[curZhiWu - 1].state == light) {
+            IMAGE *img = imgZhiWu[curZhiWu - 1][0];
+            putimagePNG(curX - img->getwidth() / 2, curY - img->getheight() / 2, img);
+        }
+
     }
     //渲染阳光
     int bollMax = sizeof(bolls) / sizeof(bolls[0]);
@@ -339,7 +342,7 @@ void userClick() {
                 printf("%d\n", index);//打印，避免出错
                 status = 1;
                 curZhiWu = index + 1;
-                if (sunshine < card[curZhiWu - 1].price) {
+                if (sunshine < card[curZhiWu - 1].price || card[curZhiWu - 1].state == black) {
                     curZhiWu = 0;
                 } else {
                     curX = msg.x;
